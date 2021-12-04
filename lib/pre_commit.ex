@@ -44,8 +44,7 @@ defmodule PreCommit do
   git_folder_exists = File.exists?(Path.dirname(@target))
   pre_commit_script_exists = fn file -> IO.read(file, :all) |> String.contains?("mix pre_commit") end
 
-  require IEx
-  # IEx.pry()
+  IO.puts "Looking for #{@git_folder_name} at #{@target}"
   unless git_folder_exists, do: raise "[pre-commit] not a git repository !"
   with  {:ok, file}   <- File.open(@target, [:append, :read]),
         false         <- pre_commit_script_exists.(file),
