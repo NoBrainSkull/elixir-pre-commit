@@ -37,7 +37,7 @@ defmodule PreCommit do
   tree.
   """
   @git_folder_name Application.get_env(:pre_commit, :git_folder_name) || ".git"
-  @root Application.get_env(:pre_commit, :root) || Mix.Project.deps_path()
+  @root Application.get_env(:pre_commit, :root) || Path.join(Mix.Project.deps_path(), "..")
   @content Path.join(@root, "priv/pre-commit")
   @target Path.join(@root, "#{@git_folder_name}/hooks/pre-commit")
 
