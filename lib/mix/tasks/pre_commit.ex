@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.PreCommit do
   use Mix.Task
+  require Logger
 
   @moduledoc """
     This file contains the functions that will be run when `mix pre_commit` is
@@ -14,29 +15,22 @@ defmodule Mix.Tasks.PreCommit do
   @verbose Application.get_env(:pre_commit, :verbose) || false
 
   def run(_) do
-    IO.puts("\e[95mPre-commit running...\e[0m")
-    {_, 0} = System.cmd("git", String.split("stash push --keep-index --message pre_commit", " "))
+    Logger.info("\e[95mPre-commit running...\e[0m")
 
     @commands
-    |> Enum.each(&run_cmds/1)
+    |> Enum.each(&(
+      case run_cmd(&1) do
+        :error -> System.halt(1)
+        _ -> :ok
+      end
+    ))
 
-    System.cmd("git", String.split("stash pop", " "), stderr_to_stdout: true)
-    |> case do
-      {_, 0} ->
-        "\e[32mPre-commit passed!\e[0m"
-
-      {"No stash entries found.", 1} ->
-        "\e[32mPre-commit passed!\e[0m"
-
-      {error, _} ->
-        error
-    end
-    |> IO.puts()
+    Logger.info "\e[32mPre-commit passed!\e[0m"
 
     System.halt(0)
   end
 
-  defp run_cmds(cmd) do
+  defp run_cmd(cmd) do
     into =
       case @verbose do
         true -> IO.stream(:stdio, :line)
@@ -47,16 +41,16 @@ defmodule Mix.Tasks.PreCommit do
     |> case do
       {_result, 0} ->
         IO.puts("mix #{cmd} ran successfully.")
+        :ok
 
       {result, _} ->
-        if !@verbose, do: IO.puts(result)
+        if @verbose, do: Logger.info(result)
 
-        IO.puts(
+        Logger.error(
           "\e[31mPre-commit failed on `mix #{cmd}`.\e[0m \nCommit again with --no-verify to live dangerously and skip pre-commit."
         )
 
-        {_, 0} = System.cmd("git", String.split("stash pop", " "))
-        System.halt(1)
+        :error
     end
   end
 end
